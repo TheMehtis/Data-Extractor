@@ -1,0 +1,310 @@
+<meta charset="UTF-8">
+<html>
+<head>
+	<title>Binarysnoop</title>
+	<style>
+	
+		#screen
+		{
+			position:					fixed;
+			z-index:					-1;
+			height:						100%;
+			width:						100%;
+		}
+		
+		input[type=text], select
+		{
+			width:						150px;
+			background-color:			white;
+		}
+		#data
+		{
+			font-family:				monospace;
+		}
+		
+		#results
+		{
+			font-family:				monospace;
+			font-size:					20px;
+		}
+		
+		#resultsTitle
+		{
+			font-family:				monospace;
+			font-size:					20px;
+			border-bottom:				3px solid #0D0208;
+			position:					sticky;
+			position: 					-webkit-sticky; /* Safari */
+			background-color:			#003B00;
+			top: 						0;
+			color:						red;
+		}
+		
+		body
+		{
+			color: white;
+		}
+		
+		.ctc
+		{
+			display:					inline;
+			cursor:						copy;
+			
+			user-select:				none;
+		}
+		
+		a
+		{
+			color:						green;
+			text-decoration:			none;
+			font-weight:				bold;
+		}
+		
+		a:visited
+		{
+			color:						red;
+			text-decoration:			none;
+			font-weight:				bold;
+		}
+		
+		a:hover
+		{
+			color:						orange;
+			text-decoration:			none;
+			font-weight:				bold;
+		}
+		
+		.animation_Flash
+		{
+			animation-name:				Flash;
+			animation-duration:			0.5s;
+		}
+		
+		@keyframes Flash
+		{
+			from {background-color:		#7F0000;}
+			to {background-color:		#000000;}
+		}
+	</style>
+</head>
+<body bgcolor="black">
+
+<canvas id="screen" width="1920" height="1000"></canvas>
+<div id="data"></div>
+<input type="file" id="file-input" />
+</br><h3>Power:</h3>
+<input type="text" id="power"></input><input type="checkbox" id="cth"></input>Hex
+</br><h3>Element:</h3>
+<!--<input type="text" id="element"></input>-->
+
+<select id="element">
+	<option value="0">Physical</option>
+	<option value="1">Fire</option>
+	<option value="2">Ice</option>
+	<option value="3">Thunder</option>
+	<option value="4">Dark</option>
+	<option value="5">Other</option>
+	<option selected value="">ALL</option>
+</select>
+
+
+
+</br><h3>Drive Drain:</h3>
+<input type="text" id="drain"></input>
+</br><h3>Revenge Value:</h3>
+<input type="text" id="revenge"></input>
+</br><h3>Attack Type:</h3>
+<input type="text" id="type"></input>
+</br></br></br>
+<button onClick="search(); ani();">Search!</button>
+<h1>Search Results:</h1>
+</br>
+<center>
+
+<!-- PW: Power -->
+<!-- EL: Element -->
+<!-- DD: Drive Drain -->
+<!-- RV: Revenge Value -->
+<!-- AT: Attack Type -->
+<div id="resultsTitle"><b>++ I4 I3 I2 I1 ?? ?? PW PW ?? EL ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? DD RV ?? ?? ?? AT ??</b></div>
+<div id="results"></div>
+</center>
+<pre id="file-content"></pre>
+<script>
+let offset = 0;
+let pageId = parseInt(new Date().getTime() / 1000);
+let data = [];
+let attackArray = [];
+let searchCheck = true;
+let searchHits;
+
+class attackParameter
+{
+	constructor(address, power, element, driveDrain, revengeDamage, attackKind)
+	{
+		this.subId;
+		this.id;
+		this.type;
+		this.critAdjust;
+		this.power = power;
+		this.team;
+		this.element = element;
+		this.enemyReaction;
+		this.hitEffect;
+		this.knockback1;
+		this.knockback2;
+		this.whoknows;
+		this.flags;
+		this.refactSelf;
+		this.refactOther;
+		this.reflectMotion;
+		this.reflectionHitback;
+		this.reflectAction;
+		this.hitSound;
+		this.reflectRC;
+		this.reflectRange;
+		this.reflectAngle;
+		this.damageEffect;
+		this.switch;
+		this.damageInterval;
+		this.floorCheck;
+		this.driveDrain = driveDrain;
+		this.revengeDamage = revengeDamage;
+		this.trReaction;
+		this.comboGroup;
+		this.randomEffect;
+		this.attackKind = attackKind;
+		this.hpDrain;
+		this.address = address;
+	}
+}
+
+function search()
+{
+	document.getElementById("results").innerHTML = "";
+	searchHits = 0;
+	
+	//Turning raw text to lower case so that it matches the attack parameter table
+	let PW = document.getElementById("power").value.toLowerCase();
+	
+	for (i = 0; i < attackArray.length; i++)
+	{
+		//Power search
+		if (!document.getElementById("cth").checked)
+		{
+			if (attackArray[i].power != PW && PW != "")
+			{
+				searchCheck = false;
+			}
+		}
+		//Power search with hexadecimal
+		else
+		{
+			PW = parseInt(document.getElementById("power").value, 16);
+			if (attackArray[i].power != PW && document.getElementById("power").value != "")
+			{
+				searchCheck = false;
+			}
+		}
+		
+		if (attackArray[i].element != document.getElementById("element").value && document.getElementById("element").value != "")
+		{
+			searchCheck = false;
+		}
+		
+		if (attackArray[i].driveDrain != document.getElementById("drain").value && document.getElementById("drain").value != "")
+		{
+			searchCheck = false;
+		}
+		
+		if (attackArray[i].revengeDamage != document.getElementById("revenge").value && document.getElementById("revenge").value != "")
+		{
+			searchCheck = false;
+		}
+		
+		if (attackArray[i].attackKind != document.getElementById("type").value && document.getElementById("type").value != "")
+		{
+			searchCheck = false;
+		}
+		
+		if (searchCheck)
+		{
+			//console.log(getBytes(i*48, 48));
+			searchHits++;
+			
+			//Print 48bytes of data in a single row
+			////////////////////////////////////////////
+			
+			//Also include Copy to Clipboard button that gives a link based on attack parameter number and "time of day in seconds" to
+			//make visited links "expire" on new search or when you restart or close program so it's easier to see which one you have extracted
+			//in previous session
+			document.getElementById("results").innerHTML = document.getElementById("results").innerHTML + "<a href='#"+ pageId + i +"'><p class='ctc' onclick='copyToClipboard("+i+");'>++</p></a>  " + getBytes(i*48, 48) + "</br>";
+		}
+		
+		searchCheck = true;
+	}
+	
+	document.getElementById("results").innerHTML = document.getElementById("results").innerHTML.replaceAll(",", " ");
+	document.getElementById("results").innerHTML = document.getElementById("results").innerHTML + "</br>" + searchHits + " result(s) found.";
+}
+
+function getBytes(addr, bytes)
+{
+	byteArray = [];
+	for (o = addr; o < addr + bytes; o++)
+	{
+		byteArray.push(data[o].padStart(2, "0").toUpperCase());
+	}
+	
+	return byteArray;
+}
+
+function readSingleFile(e)
+{
+	var file = e.target.files[0];
+	if (!file)
+	{
+		return;
+	}
+	var reader = new FileReader();
+	reader.onload = function(e)
+	{
+		var contents = e.target.result;
+		displayContents(contents);
+	};
+	reader.readAsBinaryString(file)
+}
+
+function displayContents(contents)
+{
+	
+	for (i = 0; i < contents.length; i++)
+	{
+		data.push(contents.charCodeAt(offset + i).toString(16));
+	}
+	
+	for (i = 0; i < data.length; i = i + 48)
+	{
+		attackArray.push(new attackParameter(data[i+3].padStart(2, 0) + data[i+2].padStart(2, 0) + data[i+1].padStart(2, 0) + data[i+0].padStart(2, 0), parseInt(data[i+7] + data[i+6], 16), data[i+9], data[i+41], data[i+42].toUpperCase(), data[i+46]));
+	}
+}
+
+function copyToClipboard(param)
+{
+	navigator.clipboard.writeText(attackArray[param].address);
+}
+
+function ani()
+{
+	document.getElementById("results").className = "animation_Flash";
+	
+	setTimeout(() => {document.getElementById("results").className = "";}, 500);
+}
+
+
+document.getElementById('file-input')
+  .addEventListener('change', readSingleFile, false);
+</script>
+<script src="ani.js"></script>
+</body>
+</html>
